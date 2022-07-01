@@ -68,14 +68,10 @@ int SYCLDemo() {
 
     // Submitting command group(work) to q.
     q.submit([&](sycl::handler &cgh) {
-        // Getting write only access to the buffer on a device.
         auto accessor = buffer.get_access<sycl::access::mode::write>(cgh);
-        // Execute kernel.
-        cgh.parallel_for<class FillBuffer>(
-                num_workloads, [=](sycl::id<1> WIid) {
-                    // Fill buffer with indexes.
-                    accessor[WIid] = (sycl::cl_int)WIid.get(0);
-                });
+        cgh.parallel_for<class FillBuffer>(num_workloads, [=](sycl::id<1> wid) {
+            accessor[wid] = (sycl::cl_int)wid.get(0);
+        });
     });
 
     // Getting read only access to the buffer on the host.
