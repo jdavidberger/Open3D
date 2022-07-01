@@ -55,10 +55,6 @@ namespace sycl_utils {
 using namespace cl;
 #endif
 
-// #ifdef BUILD_SYCL_MODULE
-// SYCL_EXTERNAL void PlusOne(sycl::cl_int *src) { *src += 1; }
-// #endif
-
 int SYCLDemo() {
 #ifdef BUILD_SYCL_MODULE
     int n = 4;
