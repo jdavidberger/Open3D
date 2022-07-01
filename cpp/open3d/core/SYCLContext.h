@@ -44,6 +44,9 @@ namespace sycl_utils {
 
 using namespace sycl;
 
+/// Get the default SYCL queue given an Open3D device.
+sycl::queue& GetDefaultQueue(const Device& device);
+
 /// Singleton SYCL context manager. It maintains:
 /// - A default queue for each SYCL device
 class SYCLContext {
