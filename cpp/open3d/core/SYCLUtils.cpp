@@ -54,6 +54,10 @@ namespace sycl_utils {
 using namespace cl;
 #endif
 
+#ifdef BUILD_SYCL_MODULE
+SYCL_EXTERNAL void PlusOne(sycl::cl_int *src) { *src += 1; }
+#endif
+
 int SYCLDemo() {
 #ifdef BUILD_SYCL_MODULE
     // Ref: https://intel.github.io/llvm-docs/GetStartedGuide.html
@@ -71,6 +75,7 @@ int SYCLDemo() {
         auto accessor = buffer.get_access<sycl::access::mode::write>(cgh);
         cgh.parallel_for<class FillBuffer>(num_workloads, [=](sycl::id<1> wid) {
             accessor[wid] = (sycl::cl_int)wid.get(0);
+            PlusOne(&accessor[wid]);
         });
     });
 
