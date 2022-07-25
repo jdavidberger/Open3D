@@ -8,6 +8,8 @@
 * Fix various typos (PR #5070)
 * Fix for depth estimation for VoxelBlockGrid
 * Reserve fragment buffer for VoxelBlockGrid operations
+* Exposed more functionality in SLAM pipeline
+
 
 ## 0.13
 
