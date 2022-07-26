@@ -323,5 +323,58 @@ TEST_P(OdometryPermuteDevices, RGBDOdometryMultiScaleHybrid) {
     core::Tensor Ttrans = Tdiff.Slice(0, 0, 3).Slice(1, 3, 4);
     EXPECT_LE(Ttrans.T().Matmul(Ttrans).Item<double>(), 5e-5);
 }
+
+TEST_P(OdometryPermuteDevices, TestFailureCase) {
+    core::Device device = GetParam();
+
+    const float depth_scale = 1000.0;
+    const float depth_max = 3.0;
+    const float depth_diff = 0.1;
+
+    t::geometry::Image src_depth(core::Tensor::Load("/home/justin/source/oss/Open3D/this_rgbd.depth.npy"));
+    t::geometry::Image dst_depth(core::Tensor::Load("/home/justin/source/oss/Open3D/target_rgbd.depth.npy"));
+
+    t::geometry::Image src_color(core::Tensor::Load("/home/justin/source/oss/Open3D/this_rgbd.rgb.npy"));
+    t::geometry::Image dst_color(core::Tensor::Load("/home/justin/source/oss/Open3D/target_rgbd.rgb.npy"));
+    
+    t::geometry::RGBDImage src, dst;
+    src.color_ = src_color.To(device);
+    dst.color_ = dst_color.To(device);
+    src.depth_ = src_depth.To(device);
+    dst.depth_ = dst_depth.To(device);
+
+    auto focal_length = std::make_pair(1537.13, 1537.66);
+    auto principal_point = std::make_pair(962.311, 585.374);
+    core::Tensor intrinsic_t = core::Tensor::Init<double>(
+            {{focal_length.first, 0, principal_point.first},
+             {0, focal_length.second, principal_point.second},
+             {0, 0, 1}});
+
+    core::Tensor trans =
+            core::Tensor::Eye(4, core::Float64, core::Device("CPU:0"));
+    auto result = t::pipelines::odometry::RGBDOdometryMultiScale(
+            src, dst, intrinsic_t, trans, depth_scale, depth_max,
+            std::vector<t::pipelines::odometry::OdometryConvergenceCriteria>{
+                    10, 5, 3},
+            t::pipelines::odometry::Method::Hybrid,
+            t::pipelines::odometry::OdometryLossParams(depth_diff));
+
+    core::Device host("CPU:0");
+
+    core::Tensor T = core::Tensor::Init<double>(
+            {{0.999939,0.0107980, -0.00232247,0.00502924},
+            {-0.0107996,0.999941, -0.000715040,0.000772993},
+            {0.00231461,0.000740078,0.999997, -0.00325876},
+            {0.0,0.0,0.0, 1.0}});
+
+    core::Tensor Tdiff = T.Matmul(result.transformation_.To(host, core::Float64).Inverse());
+
+    for(int i = 0;i < 4;i++) {
+        for(int j = 0;j < 4;j++) {
+            EXPECT_LE(fabs(Tdiff[i][j].Item<double>()) - (i == j), 1e-4);
+        }
+    }
+}
+
 }  // namespace tests
 }  // namespace open3d
